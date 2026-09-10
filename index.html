@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ashkan's SAT 1500+ Trajectory: 13-week structured study tracker, Bluebook test score visualizer, Desmos master toolkit, and test-day logistics.">
+  <meta name="theme-color" content="#161718">
+  <title>SAT 1500+ Trajectory — Ashkan's Study Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Hero Header -->
+  <header class="app-header">
+    <div class="container">
+      <div class="hero-top-row">
+        <div class="brand-block">
+          <div class="brand-eyebrow">
+            <span class="dot"></span>
+            <span>Digital SAT 2026 · Personal Tracker</span>
+          </div>
+          <h1 class="brand-title">SAT 1500+ Trajectory</h1>
+        </div>
+
+        <div class="trajectory-badge" id="heroTrajectoryBadge">
+          <span>Baseline 1230</span>
+          <span class="arrow">→</span>
+          <span class="target">Target 1500+</span>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="metrics-strip">
+        <div class="metric-card">
+          <span class="metric-label">Schedule Phase</span>
+          <span class="metric-value accent" id="metricCurrentWeek">Week 1</span>
+          <span class="metric-sub" id="metricWeekRange">Starts 14 Sep 2026</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Checkpoint (Test 3)</span>
+          <span class="metric-value" id="metricCheckpointDays">—</span>
+          <span class="metric-sub">9 Nov 2026 decision</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Target Sitting</span>
+          <span class="metric-value" id="metricSittingDays">—</span>
+          <span class="metric-sub">5 Dec 2026 test</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Checklist Progress</span>
+          <span class="metric-value accent" id="metricCompletedCount">0 / 65</span>
+          <span class="metric-sub" id="metricCompletedPercent">0.0% done</span>
+        </div>
+      </div>
+
+      <!-- Overall Linear Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-header">
+          <span>Overall Curriculum Completion</span>
+          <span class="mono" id="progressHeaderStats">0 of 65 days completed (0%)</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="mainProgressFill"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Tab Bar -->
+  <nav class="nav-tabs-wrapper" aria-label="Study Tracker Navigation">
+    <div class="container">
+      <div class="nav-tabs" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan" id="tabBtn-plan" data-tab="plan">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+          <span>Plan</span>
+          <span class="tab-count" id="planTabCount">65</span>
+        </button>
+
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-scores" id="tabBtn-scores" data-tab="scores">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Scores</span>
+          <span class="tab-count" id="scoresTabCount">1</span>
+        </button>
+
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-toolkit" id="tabBtn-toolkit" data-tab="toolkit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          <span>Toolkit</span>
+          <span class="tab-count">Desmos</span>
+        </button>
+
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-videos" id="tabBtn-videos" data-tab="videos">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="5" rx="2"/><polygon points="10 9 15 12 10 15 10 9"/></svg>
+          <span>Video Library</span>
+          <span class="tab-count">12</span>
+        </button>
+
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-tips" id="tabBtn-tips" data-tab="tips">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+          <span>Tips &amp; Tricks</span>
+          <span class="tab-count">7</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Areas -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- ===================================================================
+           TAB 1: PLAN VIEW
+           =================================================================== -->
+      <section class="tab-panel active" id="panel-plan" role="tabpanel" aria-labelledby="tabBtn-plan">
+        <div class="plan-controls">
+          <div class="plan-hint">
+            <span>Click any day row to view timeline, watch video &amp; study details.</span>
+          </div>
+          <div class="plan-actions">
+            <button class="btn btn-sm btn-ghost" id="expandAllWeeksBtn" type="button">Expand All</button>
+            <button class="btn btn-sm btn-ghost" id="collapseAllWeeksBtn" type="button">Collapse All</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Container for 13 Weeks -->
+        <div id="weeksListContainer"></div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 2: SCORES VIEW
+           =================================================================== -->
+      <section class="tab-panel" id="panel-scores" role="tabpanel" aria-labelledby="tabBtn-scores">
+        <div class="scores-grid">
+          
+          <!-- Trajectory Chart Card -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h2 class="section-title">Score Trajectory (1230 → 1500+)</h2>
+                <div class="metric-sub">Official Diagnostic Baseline &amp; Bluebook Practice Tests</div>
+              </div>
+              <div class="chart-legend">
+                <div class="legend-item"><span class="legend-color total"></span><span>Total Score</span></div>
+                <div class="legend-item"><span class="legend-color target"></span><span>1500 Target</span></div>
+                <div class="legend-item"><span class="legend-color rw"></span><span>Reading &amp; Writing</span></div>
+                <div class="legend-item"><span class="legend-color math"></span><span>Math</span></div>
+              </div>
+            </div>
+
+            <div class="svg-chart-container" id="svgChartWrapper">
+              <svg class="svg-chart" id="scoreChartSvg" viewBox="0 0 880 260" preserveAspectRatio="none" aria-label="SAT score trajectory chart"></svg>
+              <div class="chart-tooltip" id="chartTooltip"></div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Log Form + Score History -->
+          <div class="scores-bottom-row">
+            
+            <!-- Log New Test Score -->
+            <div class="card-panel">
+              <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem;">Log Practice Score</h3>
+              <form id="scoreEntryForm">
+                <div class="form-group">
+                  <label class="form-label" for="scoreTestName">Test / Milestone</label>
+                  <select class="form-input" id="scoreTestName" required>
+                    <option value="TEST 1 — Full Bluebook Test">TEST 1 (Week 4 · 5 Oct)</option>
+                    <option value="TEST 2 — Full Bluebook Test">TEST 2 (Week 7 · 26 Oct)</option>
+                    <option value="TEST 3 — Decision Checkpoint">TEST 3 (Week 9 · 9 Nov)</option>
+                    <option value="TEST 4 — Final Calibration">TEST 4 (Week 11 · 23 Nov)</option>
+                    <option value="Official 5 Dec Sitting">Official 5 Dec Sitting</option>
+                    <option value="Custom Practice Test">Custom Practice Test</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="scoreDate">Date</label>
+                  <input type="date" class="form-input" id="scoreDate" required>
+                </div>
+
+                <div class="score-inputs-row">
+                  <div class="form-group">
+                    <label class="form-label" for="scoreRw">Reading &amp; Writing</label>
+                    <input type="number" class="form-input" id="scoreRw" min="200" max="800" step="10" placeholder="e.g. 710" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="scoreMath">Math</label>
+                    <input type="number" class="form-input" id="scoreMath" min="200" max="800" step="10" placeholder="e.g. 740" required>
+                  </div>
+                </div>
+
+                <div class="total-preview-box">
+                  <span class="label">Calculated Total</span>
+                  <span class="score" id="previewTotalScore">—</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Save Score</button>
+              </form>
+            </div>
+
+            <!-- Score History Log -->
+            <div class="card-panel">
+              <div class="section-header" style="margin-bottom: 0.75rem;">
+                <h3 class="section-title" style="font-size: 1rem;">Score History</h3>
+                <span class="metric-sub" id="scoreHistoryCount">1 record</span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="data-table" id="scoreHistoryTable">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Test Name</th>
+                      <th>Total</th>
+                      <th>R&amp;W</th>
+                      <th>Math</th>
+                      <th>Gap to 1500</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scoreTableBody">
+                    <!-- Populated via app.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 3: TOOLKIT VIEW
+           =================================================================== -->
+      <section class="tab-panel" id="panel-toolkit" role="tabpanel" aria-labelledby="tabBtn-toolkit">
+        
+        <!-- The Golden Habit -->
+        <div class="golden-habit-box">
+          <div class="golden-habit-tag">The Golden Habit</div>
+          <div class="golden-habit-title">"Decide first, then type, bracket everything."</div>
+          <p class="golden-habit-text">
+            Desmos is an execution amplifier, not a substitute for mathematical structure. Determine whether you are finding an intersection, root, vertex, or fitting a parameter model before typing. Always enclose multi-term numerators, denominators, and exponents in brackets: e.g. <span class="mono">(a + b)/(c + d)</span> and <span class="mono">x^(2n)</span>.
+          </p>
+        </div>
+
+        <h2 class="video-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <span>6 Core Desmos Techniques</span>
+        </h2>
+        <div class="toolkit-grid" id="toolkitGrid">
+          <!-- Dynamically populated from TOOLKIT_DATA -->
+        </div>
+
+        <h2 class="video-section-title" style="margin-top: 2rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+          <span>High-Yield Desmos Quick Formulas</span>
+        </h2>
+        <div class="formulas-grid" id="formulasGrid">
+          <!-- Dynamically populated from TOOLKIT_DATA.formulas -->
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 4: VIDEO LIBRARY VIEW
+           =================================================================== -->
+      <section class="tab-panel" id="panel-videos" role="tabpanel" aria-labelledby="tabBtn-videos">
+        
+        <h2 class="video-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span>Start Here: 5 Verified Strategy Videos (Pratik Vangal)</span>
+        </h2>
+        <div class="start-here-grid" id="startHereGrid">
+          <!-- Dynamically populated from VIDEO_LIBRARY_DATA.startHere -->
+        </div>
+
+        <h2 class="video-section-title" style="margin-top: 2.5rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="5" rx="2"/><polygon points="10 9 15 12 10 15 10 9"/></svg>
+          <span>Recommended Channels &amp; Curricula</span>
+        </h2>
+        <div class="channels-grid" id="channelsGrid">
+          <!-- Dynamically populated from VIDEO_LIBRARY_DATA.channels -->
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 5: TIPS & TRICKS VIEW
+           =================================================================== -->
+      <section class="tab-panel" id="panel-tips" role="tabpanel" aria-labelledby="tabBtn-tips">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Digital SAT Test-Taking Rules &amp; Strategy</h2>
+            <div class="metric-sub">Fact-checked against the 2026 Digital SAT Specification</div>
+          </div>
+        </div>
+
+        <div class="tips-list" id="tipsListContainer">
+          <!-- 7 Collapsible Category Cards rendered from TIPS_DATA -->
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- =====================================================================
+       DAY DETAIL MODAL DIALOG
+       ===================================================================== -->
+  <div class="modal-backdrop" id="dayModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalDayDate">
+    <div class="modal-card" id="dayModalCard">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-header-meta">
+          <div class="modal-phase" id="modalWeekPhase">Week 1 · Phase 1 · Advanced Math attack</div>
+          <h3 class="modal-date" id="modalDayDate">Monday, 14 September 2026</h3>
+          <div class="modal-tags-row">
+            <span class="subject-tag" id="modalSubjTag"></span>
+            <span class="subject-tag" id="modalHoursTag"></span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close dialog" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="modal-body">
+        
+        <!-- Objective Callout -->
+        <div class="modal-objective-box">
+          <span class="modal-section-label">Session Objective</span>
+          <p class="modal-objective-text" id="modalObjectiveText"></p>
+        </div>
+
+        <!-- Algorithmic Timeline Segmented Bar -->
+        <div class="timeline-block">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span class="modal-section-label">Session Breakdown</span>
+            <span class="mono" id="modalTotalDurationLabel" style="font-size: 0.72rem; color: var(--muted);">60 min</span>
+          </div>
+          <div class="timeline-bar" id="modalTimelineBar">
+            <!-- Segments injected by app.js -->
+          </div>
+          <div class="timeline-legend" id="modalTimelineLegend">
+            <!-- Legend entries injected by app.js -->
+          </div>
+        </div>
+
+        <!-- Watch Section (Video embed or channel card) -->
+        <div class="modal-watch-block" id="modalWatchSection">
+          <!-- Injected by app.js -->
+        </div>
+
+        <!-- Do Section (Tasks & Sub-steps) -->
+        <div class="modal-do-block">
+          <span class="modal-section-label">Action Items &amp; Practice Tasks</span>
+          <div class="substeps-list" id="modalSubstepsList">
+            <!-- Injected by app.js -->
+          </div>
+        </div>
+
+        <!-- Tip Section (Callout with orange border) -->
+        <div class="modal-tip-callout" id="modalTipCallout" style="display: none;">
+          <div class="modal-tip-label">Strategic Tip</div>
+          <div class="modal-tip-text" id="modalTipContent"></div>
+        </div>
+
+        <!-- Modal Completion Toggle -->
+        <div class="modal-completion-bar">
+          <label class="modal-completion-left" for="modalCheckmark">
+            <input type="checkbox" class="custom-checkbox" id="modalCheckmark">
+            <span class="modal-completion-title">Mark this session complete</span>
+          </label>
+          <span class="mono" id="modalCompletionStatus" style="font-size: 0.75rem; color: var(--muted-2);">Pending</span>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer Navigation -->
+      <div class="modal-footer">
+        <button class="modal-nav-btn" id="modalPrevDayBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Previous Day</span>
+        </button>
+
+        <span class="mono" id="modalNavDayCounter" style="font-size: 0.75rem; color: var(--muted);">Day 1 of 65</span>
+
+        <button class="modal-nav-btn" id="modalNextDayBtn" type="button">
+          <span>Next Day</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
