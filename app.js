@@ -71,8 +71,7 @@
     modalTotalDurationLabel: document.getElementById('modalTotalDurationLabel'),
     modalTimelineBar: document.getElementById('modalTimelineBar'),
     modalTimelineLegend: document.getElementById('modalTimelineLegend'),
-    modalWatchSection: document.getElementById('modalWatchSection'),
-    modalSubstepsList: document.getElementById('modalSubstepsList'),
+    modalSessionFlow: document.getElementById('modalSessionFlow'),
     modalTipCallout: document.getElementById('modalTipCallout'),
     modalTipContent: document.getElementById('modalTipContent'),
     modalCheckmark: document.getElementById('modalCheckmark'),
@@ -351,7 +350,8 @@
 
     if (W > 0) {
       segments.push({
-        label: `Watch: ${day.watch.title ? day.watch.title.slice(0, 24) + '…' : 'Video'} (${W}m)`,
+        label: `Watch (${W}m)`,
+        detail: day.watch.title || 'Video Lesson',
         time: `${currentMin}–${currentMin + W}m`,
         pct: Math.round((W / H) * 100),
         cls: 'watch'
@@ -360,7 +360,8 @@
     }
 
     segments.push({
-      label: `Do: Practice & Lesson (${D}m)`,
+      label: `Practice (${D}m)`,
+      detail: 'Core Problem Sets & Lessons',
       time: `${currentMin}–${currentMin + D}m`,
       pct: Math.round((D / H) * 100),
       cls: 'do'
@@ -368,7 +369,8 @@
     currentMin += D;
 
     segments.push({
-      label: `Review & Log (${R}m)`,
+      label: `Review (${R}m)`,
+      detail: 'Miss classification & summary',
       time: `${currentMin}–${currentMin + R}m`,
       pct: Math.max(6, 100 - (W > 0 ? Math.round((W / H) * 100) : 0) - Math.round((D / H) * 100)),
       cls: 'review'
@@ -498,7 +500,7 @@
   }
 
   /* ==========================================================================
-     5. Day Detail Modal Functionality
+     5. Day Detail Modal Functionality — Streamlined Session Flow
      ========================================================================== */
 
   function openDayModal(index) {
@@ -508,18 +510,20 @@
 
     // Header metadata
     elements.modalDayDate.textContent = formatDisplayDate(day.date);
-    elements.modalWeekPhase.textContent = `Week ${day.weekNum} · ${day.weekPhase}`;
+    elements.modalWeekPhase.textContent = `Week ${day.weekNum} · ${day.weekRange}`;
 
     const subjConfig = getSubjectTagConfig(day.subj);
     elements.modalSubjTag.className = `subject-tag ${day.subj}`;
     elements.modalSubjTag.innerHTML = `${subjConfig.iconSvg}<span>${subjConfig.code}</span>`;
-    elements.modalHoursTag.textContent = day.hrs === '—' ? 'FULL TEST' : `${day.hrs} session`;
+    elements.modalHoursTag.textContent = day.hrs === '—' ? 'EXAM DAY' : `${day.hrs} session`;
 
-    // Objective
-    const objective = day.tip ? day.tip : day.weekPhase;
-    elements.modalObjectiveText.textContent = objective;
+    // 1. Session Objective (Derived from day title & curriculum focus — no redundant duplicate tip)
+    elements.modalObjectiveText.innerHTML = `
+      <div style="font-size:1.05rem; font-weight:700; color:var(--text);">${day.title}</div>
+      <div style="font-size:0.82rem; color:var(--muted); margin-top:0.25rem;">Curriculum Target: ${day.weekPhase}</div>
+    `;
 
-    // Timeline Rendering
+    // 2. Big Hero Session Timeline Breakdown
     const timelineData = computeTimelineSegments(day);
     elements.modalTotalDurationLabel.textContent = timelineData.totalDisplay;
     elements.modalTimelineBar.innerHTML = '';
@@ -529,88 +533,257 @@
       const segEl = document.createElement('div');
       segEl.className = `timeline-segment ${seg.cls}`;
       segEl.style.width = `${seg.pct}%`;
-      segEl.textContent = seg.label;
       segEl.title = `${seg.label} — ${seg.time}`;
+      segEl.innerHTML = `
+        <span class="seg-title">${seg.label}</span>
+        <span class="seg-time">${seg.time}</span>
+      `;
       elements.modalTimelineBar.appendChild(segEl);
 
       const legEl = document.createElement('div');
       legEl.className = 'timeline-legend-item';
       let dotColor = '#9A9C9F';
-      if (seg.cls === 'watch') dotColor = '#FFAA5A';
+      if (seg.cls === 'watch') dotColor = '#FFAE60';
       if (seg.cls === 'do') dotColor = 'var(--orange)';
       if (seg.cls === 'rw' || seg.cls === 'math') dotColor = 'var(--orange)';
-      legEl.innerHTML = `<span class="timeline-legend-dot" style="background:${dotColor}"></span>${seg.label} <span style="color:var(--muted-2);">(${seg.time})</span>`;
+      legEl.innerHTML = `<span class="timeline-legend-dot" style="background:${dotColor}"></span>${seg.label} <span style="color:var(--muted-2); font-family:var(--font-mono); font-size:0.7rem;">(${seg.time})</span>`;
       elements.modalTimelineLegend.appendChild(legEl);
     });
 
-    // Watch Section
-    elements.modalWatchSection.innerHTML = '';
-    if (day.watch && day.watch.type === 'video') {
-      const watchContainer = document.createElement('div');
-      watchContainer.innerHTML = `
-        <span class="modal-section-label">Required Video Lesson</span>
-        <div class="video-embed-frame" style="margin-top:0.35rem;">
-          <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" 
-                  title="${day.watch.title}" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowfullscreen>
-          </iframe>
-        </div>
-        <div class="video-meta-row" style="margin-top:0.4rem;">
-          <span class="video-meta-title">${day.watch.title}</span>
-          <span class="video-meta-duration">${day.watch.minutes} min</span>
-        </div>
-        <div style="margin-top: 0.35rem;">
-          <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost" style="font-size:0.75rem;">
-            Watch directly on YouTube ↗
-          </a>
-        </div>
-      `;
-      elements.modalWatchSection.appendChild(watchContainer);
-      elements.modalWatchSection.style.display = 'block';
-    } else if (day.watch && day.watch.type === 'channel') {
-      const channelCard = document.createElement('div');
-      channelCard.innerHTML = `
-        <span class="modal-section-label">Recommended Video Source</span>
-        <div class="channel-recommend-card" style="margin-top:0.35rem;">
-          <div class="channel-recommend-info">
-            <span class="channel-recommend-name">${day.watch.label}</span>
-            <span class="channel-recommend-label">Recommended resource for this day's concepts</span>
+    // 3. Chronological Step-by-Step Flow (Where to Start and End)
+    elements.modalSessionFlow.innerHTML = '';
+
+    const isTestDay = day.subj === 'test';
+    const hasVideo = day.watch && day.watch.type === 'video';
+    const hasChannel = day.watch && day.watch.type === 'channel';
+
+    if (day.date === TESTDAY_DATE || day.hrs === '—') {
+      // Official Exam Day Card
+      const examCard = document.createElement('div');
+      examCard.className = 'session-step-card active-step';
+      examCard.innerHTML = `
+        <div class="session-step-header">
+          <div class="session-step-title-group">
+            <span class="step-badge">Official Sitting</span>
+            <span class="step-title">Test Day Schedule &amp; Execution</span>
           </div>
-          <a href="${day.watch.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
-            Open Channel ↗
-          </a>
+          <span class="step-time-tag">Real Conditions</span>
+        </div>
+        <p style="font-size:0.86rem; color:var(--text); line-height:1.5;">
+          ${day.do}
+        </p>
+        <div class="substeps-list" style="margin-top:0.5rem;">
+          <div class="substep-item"><span class="substep-num">01</span><span>7:45 AM — Arrive at test center with photo ID and admission ticket.</span></div>
+          <div class="substep-item"><span class="substep-num">02</span><span>8:00 AM — Connect device to Wi-Fi, launch Bluebook, enter start code.</span></div>
+          <div class="substep-item"><span class="substep-num">03</span><span>8:15 AM — Reading &amp; Writing (Module 1 &amp; Module 2, 64 min total).</span></div>
+          <div class="substep-item"><span class="substep-num">04</span><span>9:19 AM — 10-minute scheduled break (snack &amp; water).</span></div>
+          <div class="substep-item"><span class="substep-num">05</span><span>9:29 AM — Math (Module 1 &amp; Module 2, 70 min total).</span></div>
+          <div class="substep-item"><span class="substep-num">06</span><span>10:40 AM — Test complete. Dismissal.</span></div>
         </div>
       `;
-      elements.modalWatchSection.appendChild(channelCard);
-      elements.modalWatchSection.style.display = 'block';
+      elements.modalSessionFlow.appendChild(examCard);
+
+    } else if (isTestDay) {
+      // Practice Bluebook Test Block
+      const testStepCard = document.createElement('div');
+      testStepCard.className = 'session-step-card active-step';
+      testStepCard.innerHTML = `
+        <div class="session-step-header">
+          <div class="session-step-title-group">
+            <span class="step-badge">Phase 1</span>
+            <span class="step-title">Full Bluebook Test Simulation</span>
+          </div>
+          <span class="step-time-tag">~154 min block</span>
+        </div>
+        <div class="substeps-list">
+          <div class="substep-item"><span class="substep-num">01</span><span>0–10m — Setup quiet testing environment, close tabs, launch Bluebook.</span></div>
+          <div class="substep-item"><span class="substep-num">02</span><span>10–74m — Reading &amp; Writing: 54 questions across 2 modules (64 min).</span></div>
+          <div class="substep-item"><span class="substep-num">03</span><span>74–84m — 10-minute break away from screen.</span></div>
+          <div class="substep-item"><span class="substep-num">04</span><span>84–154m — Math: 44 questions across 2 modules (70 min).</span></div>
+          <div class="substep-item"><span class="substep-num">05</span><span>Post-Test — Record your score in the Scores tab immediately.</span></div>
+        </div>
+      `;
+      elements.modalSessionFlow.appendChild(testStepCard);
+
+      if (hasVideo) {
+        const videoStepCard = document.createElement('div');
+        videoStepCard.className = 'session-step-card';
+        videoStepCard.innerHTML = `
+          <div class="session-step-header">
+            <div class="session-step-title-group">
+              <span class="step-badge">Prep Video</span>
+              <span class="step-title">${day.watch.title}</span>
+            </div>
+            <span class="step-time-tag">${day.watch.minutes} min</span>
+          </div>
+          <div class="compact-video-card">
+            <div class="compact-video-left">
+              <div class="compact-video-play-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="compact-video-info">
+                <div class="compact-video-title">${day.watch.title}</div>
+                <div class="compact-video-meta">Pratik Vangal · ${day.watch.minutes} min</div>
+              </div>
+            </div>
+            <div class="compact-video-actions">
+              <button class="btn btn-sm btn-primary toggle-video-btn" type="button">▷ Watch In App</button>
+              <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">YouTube ↗</a>
+            </div>
+          </div>
+          <div class="video-collapsible-wrapper">
+            <div class="video-embed-frame">
+              <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" title="${day.watch.title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          </div>
+        `;
+        elements.modalSessionFlow.appendChild(videoStepCard);
+      }
+
     } else {
-      elements.modalWatchSection.style.display = 'none';
+      // Standard Study Day Flow: Step 1 (Watch/Prep) -> Step 2 (Solve) -> Step 3 (Review & Log)
+
+      // Step 1: Watch & Learn / Prep
+      const step1Card = document.createElement('div');
+      step1Card.className = 'session-step-card active-step';
+
+      if (hasVideo) {
+        step1Card.innerHTML = `
+          <div class="session-step-header">
+            <div class="session-step-title-group">
+              <span class="step-badge">Step 1</span>
+              <span class="step-title">Watch Strategy &amp; Concept Lesson</span>
+            </div>
+            <span class="step-time-tag">0–${day.watch.minutes}m (${day.watch.minutes} min)</span>
+          </div>
+          <div class="compact-video-card">
+            <div class="compact-video-left">
+              <div class="compact-video-play-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="compact-video-info">
+                <div class="compact-video-title">${day.watch.title}</div>
+                <div class="compact-video-meta">Pratik Vangal · ${day.watch.minutes} min lesson</div>
+              </div>
+            </div>
+            <div class="compact-video-actions">
+              <button class="btn btn-sm btn-primary toggle-video-btn" type="button">▷ Watch Lesson</button>
+              <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">YouTube ↗</a>
+            </div>
+          </div>
+          <div class="video-collapsible-wrapper">
+            <div class="video-embed-frame">
+              <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" title="${day.watch.title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          </div>
+        `;
+      } else if (hasChannel) {
+        step1Card.innerHTML = `
+          <div class="session-step-header">
+            <div class="session-step-title-group">
+              <span class="step-badge">Step 1</span>
+              <span class="step-title">Curated Topic Walkthrough</span>
+            </div>
+            <span class="step-time-tag">Recommended Channel</span>
+          </div>
+          <div class="compact-video-card">
+            <div class="compact-video-left">
+              <div class="compact-video-play-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="compact-video-info">
+                <div class="compact-video-title">${day.watch.label}</div>
+                <div class="compact-video-meta">Recommended resource for today's concepts</div>
+              </div>
+            </div>
+            <a href="${day.watch.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+              Open Channel ↗
+            </a>
+          </div>
+        `;
+      } else {
+        step1Card.innerHTML = `
+          <div class="session-step-header">
+            <div class="session-step-title-group">
+              <span class="step-badge">Step 1</span>
+              <span class="step-title">Session Setup &amp; Missed Problem Review</span>
+            </div>
+            <span class="step-time-tag">Initial 5–10m</span>
+          </div>
+          <p style="font-size:0.86rem; color:var(--muted); line-height:1.5;">
+            No video today. Open your error log and review past misses in this domain to prime your pattern recognition before solving.
+          </p>
+        `;
+      }
+      elements.modalSessionFlow.appendChild(step1Card);
+
+      // Step 2: Practice & Solve (Action Tasks)
+      const step2Card = document.createElement('div');
+      step2Card.className = 'session-step-card';
+      const doText = (day.do || '').trim();
+      const rawSteps = doText.split(/\s+\+\s+|\.\s+/).map(s => s.trim()).filter(s => s.length > 0);
+
+      let step2ListHtml = '';
+      if (rawSteps.length === 0) {
+        step2ListHtml = `<div class="substep-item"><span class="substep-num">01</span><span>Independent review, error-log analysis, and rest.</span></div>`;
+      } else {
+        rawSteps.forEach((step, idx) => {
+          const numStr = idx < 9 ? `0${idx + 1}` : `${idx + 1}`;
+          const formatted = step.endsWith('.') ? step : `${step}.`;
+          step2ListHtml += `
+            <label class="substep-item" style="cursor:pointer;">
+              <input type="checkbox" class="custom-checkbox" style="margin-top:0.15rem; flex-shrink:0;">
+              <span>${formatted}</span>
+            </label>
+          `;
+        });
+      }
+
+      step2Card.innerHTML = `
+        <div class="session-step-header">
+          <div class="session-step-title-group">
+            <span class="step-badge">Step 2</span>
+            <span class="step-title">Core Practice Tasks &amp; Problem Sets</span>
+          </div>
+          <span class="step-time-tag">Primary Workout</span>
+        </div>
+        <div class="substeps-list">
+          ${step2ListHtml}
+        </div>
+      `;
+      elements.modalSessionFlow.appendChild(step2Card);
+
+      // Step 3: Review & Log (Wrap-Up)
+      const step3Card = document.createElement('div');
+      step3Card.className = 'session-step-card';
+      step3Card.innerHTML = `
+        <div class="session-step-header">
+          <div class="session-step-title-group">
+            <span class="step-badge">Step 3</span>
+            <span class="step-title">Review, Error Logging &amp; Sign-Off</span>
+          </div>
+          <span class="step-time-tag">Final 5–10m</span>
+        </div>
+        <p style="font-size:0.86rem; color:var(--muted); line-height:1.5;">
+          Review any misses immediately. Categorize each miss into <strong>Careless slip</strong> (e.g. sign error, missed EXCEPT) vs <strong>Content gap</strong>. Then mark the session complete below.
+        </p>
+      `;
+      elements.modalSessionFlow.appendChild(step3Card);
     }
 
-    // Do Section: Checklist of sub-steps
-    elements.modalSubstepsList.innerHTML = '';
-    const doText = (day.do || '').trim();
-    if (!doText) {
-      const emptyNotice = document.createElement('div');
-      emptyNotice.className = 'substep-item';
-      emptyNotice.innerHTML = `<span class="substep-bullet"></span><span>Independent review, error-log analysis, and rest.</span>`;
-      elements.modalSubstepsList.appendChild(emptyNotice);
-    } else {
-      // Split on " + " or ". "
-      const rawSteps = doText.split(/\s+\+\s+|\.\s+/);
-      const cleanSteps = rawSteps.map(s => s.trim()).filter(s => s.length > 0);
-      cleanSteps.forEach(step => {
-        const item = document.createElement('div');
-        item.className = 'substep-item';
-        // Add a dot if not ending with punctuation
-        const formatted = step.endsWith('.') ? step : `${step}.`;
-        item.innerHTML = `<span class="substep-bullet"></span><span>${formatted}</span>`;
-        elements.modalSubstepsList.appendChild(item);
+    // Attach Toggle Video listener if button exists
+    const toggleVideoBtn = elements.modalSessionFlow.querySelector('.toggle-video-btn');
+    if (toggleVideoBtn) {
+      const wrapper = elements.modalSessionFlow.querySelector('.video-collapsible-wrapper');
+      toggleVideoBtn.addEventListener('click', () => {
+        const isExpanded = wrapper.classList.toggle('is-expanded');
+        toggleVideoBtn.textContent = isExpanded ? '✕ Close Video' : '▷ Watch Lesson';
+        toggleVideoBtn.classList.toggle('btn-primary', !isExpanded);
+        toggleVideoBtn.classList.toggle('btn-ghost', isExpanded);
       });
     }
 
-    // Tip Callout
+    // 4. Strategic Pro-Tip (Only if present, styled as callout)
     if (day.tip) {
       elements.modalTipContent.textContent = day.tip;
       elements.modalTipCallout.style.display = 'flex';
@@ -618,18 +791,18 @@
       elements.modalTipCallout.style.display = 'none';
     }
 
-    // Mark Complete Toggle
+    // 5. Completion Toggle Synchronization
     const isDone = !!checklistState[day.date];
     elements.modalCheckmark.checked = isDone;
     elements.modalCompletionStatus.textContent = isDone ? 'Completed' : 'Pending';
     elements.modalCompletionStatus.style.color = isDone ? 'var(--orange)' : 'var(--muted-2)';
 
-    // Navigation state
+    // 6. Navigation Controls
     elements.modalPrevDayBtn.disabled = index === 0;
     elements.modalNextDayBtn.disabled = index === flatDaysList.length - 1;
     elements.modalNavDayCounter.textContent = `Day ${index + 1} of ${flatDaysList.length}`;
 
-    // Open backdrop
+    // Open Modal
     elements.dayModalBackdrop.classList.add('is-open');
     document.body.style.overflow = 'hidden';
   }
@@ -637,8 +810,8 @@
   function closeDayModal() {
     elements.dayModalBackdrop.classList.remove('is-open');
     document.body.style.overflow = '';
-    // Unload iframe if any so video pauses
-    elements.modalWatchSection.innerHTML = '';
+    // Unload iframe if any so video audio stops immediately
+    elements.modalSessionFlow.innerHTML = '';
   }
 
   function navigateModal(direction) {
