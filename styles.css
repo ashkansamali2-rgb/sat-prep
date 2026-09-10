@@ -753,12 +753,14 @@ body {
   width: 100%;
   height: 280px;
   position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
 }
 
 .svg-chart {
   width: 100%;
   height: 100%;
-  overflow: visible;
+  display: block;
 }
 
 .chart-tooltip {
@@ -1671,6 +1673,45 @@ body {
   border: none;
 }
 
+.video-player-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+}
+
+.video-player-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.video-player-title-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.video-player-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.video-player-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
 /* Checkable Action Sub-steps */
 .substeps-list {
   display: flex;
@@ -1695,6 +1736,17 @@ body {
 .substep-item:hover {
   background: #202225;
   border-color: #45474D;
+}
+
+.substep-item.is-completed {
+  opacity: 0.65;
+  border-color: rgba(245, 130, 31, 0.25);
+  background: rgba(245, 130, 31, 0.03);
+}
+
+.substep-item.is-completed .substep-text {
+  text-decoration: line-through;
+  color: var(--muted);
 }
 
 .substep-num {

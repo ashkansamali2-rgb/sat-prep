@@ -9,10 +9,12 @@
   // Storage Keys
   const STORAGE_KEY_CHECKLIST = 'sat-plan-checklist';
   const STORAGE_KEY_SCORES = 'sat-plan-scores';
+  const STORAGE_KEY_SUBTASKS = 'sat-plan-subtasks';
 
   // Global State
   let checklistState = {};
   let scoresState = [];
+  let subtasksState = {};
   let flatDaysList = [];
   let activeDayIndex = -1;
 
@@ -99,6 +101,19 @@
       checklistState = {};
     }
 
+    // Load Sub-tasks
+    try {
+      const storedSubtasks = localStorage.getItem(STORAGE_KEY_SUBTASKS);
+      if (storedSubtasks) {
+        subtasksState = JSON.parse(storedSubtasks) || {};
+      } else {
+        subtasksState = {};
+      }
+    } catch (err) {
+      console.warn('Failed to read sat-plan-subtasks from localStorage:', err);
+      subtasksState = {};
+    }
+
     // Load Scores
     try {
       const storedScores = localStorage.getItem(STORAGE_KEY_SCORES);
@@ -133,6 +148,14 @@
     }
   }
 
+  function saveSubtasksData() {
+    try {
+      localStorage.setItem(STORAGE_KEY_SUBTASKS, JSON.stringify(subtasksState));
+    } catch (err) {
+      console.warn('Failed to save sat-plan-subtasks to localStorage:', err);
+    }
+  }
+
   function saveScoresData() {
     try {
       localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(scoresState));
@@ -144,6 +167,16 @@
   /* ==========================================================================
      2. Data Modeling & Helpers
      ========================================================================== */
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   function buildFlatDays() {
     flatDaysList = [];
@@ -559,6 +592,26 @@
 
     if (day.date === TESTDAY_DATE || day.hrs === '—') {
       // Official Exam Day Card
+      const examSteps = [
+        '7:45 AM — Arrive at test center with photo ID and admission ticket.',
+        '8:00 AM — Connect device to Wi-Fi, launch Bluebook, enter start code.',
+        '8:15 AM — Reading & Writing (Module 1 & Module 2, 64 min total).',
+        '9:19 AM — 10-minute scheduled break (snack & water).',
+        '9:29 AM — Math (Module 1 & Module 2, 70 min total).',
+        '10:40 AM — Test complete. Dismissal.'
+      ];
+      let examStepsHtml = '';
+      examSteps.forEach((step, idx) => {
+        const subtaskKey = `${day.date}-exam-${idx}`;
+        const isDone = !!subtasksState[subtaskKey];
+        examStepsHtml += `
+          <label class="substep-item ${isDone ? 'is-completed' : ''}" style="cursor:pointer;">
+            <input type="checkbox" class="custom-checkbox subtask-checkbox" data-subtask-key="${subtaskKey}" ${isDone ? 'checked' : ''} style="margin-top:0.15rem; flex-shrink:0;">
+            <span class="substep-text">${step}</span>
+          </label>
+        `;
+      });
+
       const examCard = document.createElement('div');
       examCard.className = 'session-step-card active-step';
       examCard.innerHTML = `
@@ -569,22 +622,36 @@
           </div>
           <span class="step-time-tag">Real Conditions</span>
         </div>
-        <p style="font-size:0.86rem; color:var(--text); line-height:1.5;">
-          ${day.do}
+        <p style="font-size:0.86rem; color:var(--text); line-height:1.5; margin-bottom:0.65rem;">
+          ${escapeHtml(day.do)}
         </p>
-        <div class="substeps-list" style="margin-top:0.5rem;">
-          <div class="substep-item"><span class="substep-num">01</span><span>7:45 AM — Arrive at test center with photo ID and admission ticket.</span></div>
-          <div class="substep-item"><span class="substep-num">02</span><span>8:00 AM — Connect device to Wi-Fi, launch Bluebook, enter start code.</span></div>
-          <div class="substep-item"><span class="substep-num">03</span><span>8:15 AM — Reading &amp; Writing (Module 1 &amp; Module 2, 64 min total).</span></div>
-          <div class="substep-item"><span class="substep-num">04</span><span>9:19 AM — 10-minute scheduled break (snack &amp; water).</span></div>
-          <div class="substep-item"><span class="substep-num">05</span><span>9:29 AM — Math (Module 1 &amp; Module 2, 70 min total).</span></div>
-          <div class="substep-item"><span class="substep-num">06</span><span>10:40 AM — Test complete. Dismissal.</span></div>
+        <div class="substeps-list">
+          ${examStepsHtml}
         </div>
       `;
       elements.modalSessionFlow.appendChild(examCard);
 
     } else if (isTestDay) {
       // Practice Bluebook Test Block
+      const testSteps = [
+        '0–10m — Setup quiet testing environment, close tabs, launch Bluebook.',
+        '10–74m — Reading & Writing: 54 questions across 2 modules (64 min).',
+        '74–84m — 10-minute break away from screen.',
+        '84–154m — Math: 44 questions across 2 modules (70 min).',
+        'Post-Test — Record your score in the Scores tab immediately.'
+      ];
+      let testStepsHtml = '';
+      testSteps.forEach((step, idx) => {
+        const subtaskKey = `${day.date}-test-${idx}`;
+        const isDone = !!subtasksState[subtaskKey];
+        testStepsHtml += `
+          <label class="substep-item ${isDone ? 'is-completed' : ''}" style="cursor:pointer;">
+            <input type="checkbox" class="custom-checkbox subtask-checkbox" data-subtask-key="${subtaskKey}" ${isDone ? 'checked' : ''} style="margin-top:0.15rem; flex-shrink:0;">
+            <span class="substep-text">${step}</span>
+          </label>
+        `;
+      });
+
       const testStepCard = document.createElement('div');
       testStepCard.className = 'session-step-card active-step';
       testStepCard.innerHTML = `
@@ -596,11 +663,7 @@
           <span class="step-time-tag">~154 min block</span>
         </div>
         <div class="substeps-list">
-          <div class="substep-item"><span class="substep-num">01</span><span>0–10m — Setup quiet testing environment, close tabs, launch Bluebook.</span></div>
-          <div class="substep-item"><span class="substep-num">02</span><span>10–74m — Reading &amp; Writing: 54 questions across 2 modules (64 min).</span></div>
-          <div class="substep-item"><span class="substep-num">03</span><span>74–84m — 10-minute break away from screen.</span></div>
-          <div class="substep-item"><span class="substep-num">04</span><span>84–154m — Math: 44 questions across 2 modules (70 min).</span></div>
-          <div class="substep-item"><span class="substep-num">05</span><span>Post-Test — Record your score in the Scores tab immediately.</span></div>
+          ${testStepsHtml}
         </div>
       `;
       elements.modalSessionFlow.appendChild(testStepCard);
@@ -612,28 +675,20 @@
           <div class="session-step-header">
             <div class="session-step-title-group">
               <span class="step-badge">Prep Video</span>
-              <span class="step-title">${day.watch.title}</span>
+              <span class="step-title">${escapeHtml(day.watch.title)}</span>
             </div>
             <span class="step-time-tag">${day.watch.minutes} min</span>
           </div>
-          <div class="compact-video-card">
-            <div class="compact-video-left">
-              <div class="compact-video-play-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </div>
-              <div class="compact-video-info">
-                <div class="compact-video-title">${day.watch.title}</div>
-                <div class="compact-video-meta">Pratik Vangal · ${day.watch.minutes} min</div>
-              </div>
-            </div>
-            <div class="compact-video-actions">
-              <button class="btn btn-sm btn-primary toggle-video-btn" type="button">▷ Watch In App</button>
-              <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">YouTube ↗</a>
-            </div>
-          </div>
-          <div class="video-collapsible-wrapper">
+          <div class="video-player-container">
             <div class="video-embed-frame">
-              <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" title="${day.watch.title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" title="${escapeHtml(day.watch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="video-player-meta">
+              <div class="video-player-title-info">
+                <div class="video-player-title">${escapeHtml(day.watch.title)}</div>
+                <div class="video-player-sub">Pratik Vangal · ${day.watch.minutes} min prep lesson</div>
+              </div>
+              <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">YouTube ↗</a>
             </div>
           </div>
         `;
@@ -656,24 +711,16 @@
             </div>
             <span class="step-time-tag">0–${day.watch.minutes}m (${day.watch.minutes} min)</span>
           </div>
-          <div class="compact-video-card">
-            <div class="compact-video-left">
-              <div class="compact-video-play-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </div>
-              <div class="compact-video-info">
-                <div class="compact-video-title">${day.watch.title}</div>
-                <div class="compact-video-meta">Pratik Vangal · ${day.watch.minutes} min lesson</div>
-              </div>
-            </div>
-            <div class="compact-video-actions">
-              <button class="btn btn-sm btn-primary toggle-video-btn" type="button">▷ Watch Lesson</button>
-              <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">YouTube ↗</a>
-            </div>
-          </div>
-          <div class="video-collapsible-wrapper">
+          <div class="video-player-container">
             <div class="video-embed-frame">
-              <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" title="${day.watch.title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              <iframe src="https://www.youtube.com/embed/${day.watch.id}?rel=0" title="${escapeHtml(day.watch.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="video-player-meta">
+              <div class="video-player-title-info">
+                <div class="video-player-title">${escapeHtml(day.watch.title)}</div>
+                <div class="video-player-sub">Pratik Vangal · ${day.watch.minutes} min lesson</div>
+              </div>
+              <a href="https://www.youtube.com/watch?v=${day.watch.id}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">YouTube ↗</a>
             </div>
           </div>
         `;
@@ -686,15 +733,10 @@
             </div>
             <span class="step-time-tag">Recommended Channel</span>
           </div>
-          <div class="compact-video-card">
-            <div class="compact-video-left">
-              <div class="compact-video-play-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </div>
-              <div class="compact-video-info">
-                <div class="compact-video-title">${day.watch.label}</div>
-                <div class="compact-video-meta">Recommended resource for today's concepts</div>
-              </div>
+          <div class="channel-recommend-card">
+            <div class="channel-recommend-info">
+              <div class="channel-recommend-name">${escapeHtml(day.watch.label)}</div>
+              <div class="channel-recommend-label">Recommended YouTube channel for today's concepts</div>
             </div>
             <a href="${day.watch.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
               Open Channel ↗
@@ -728,12 +770,13 @@
         step2ListHtml = `<div class="substep-item"><span class="substep-num">01</span><span>Independent review, error-log analysis, and rest.</span></div>`;
       } else {
         rawSteps.forEach((step, idx) => {
-          const numStr = idx < 9 ? `0${idx + 1}` : `${idx + 1}`;
           const formatted = step.endsWith('.') ? step : `${step}.`;
+          const subtaskKey = `${day.date}-${idx}`;
+          const isDone = !!subtasksState[subtaskKey];
           step2ListHtml += `
-            <label class="substep-item" style="cursor:pointer;">
-              <input type="checkbox" class="custom-checkbox" style="margin-top:0.15rem; flex-shrink:0;">
-              <span>${formatted}</span>
+            <label class="substep-item ${isDone ? 'is-completed' : ''}" style="cursor:pointer;">
+              <input type="checkbox" class="custom-checkbox subtask-checkbox" data-subtask-key="${subtaskKey}" ${isDone ? 'checked' : ''} style="margin-top:0.15rem; flex-shrink:0;">
+              <span class="substep-text">${escapeHtml(formatted)}</span>
             </label>
           `;
         });
@@ -771,17 +814,28 @@
       elements.modalSessionFlow.appendChild(step3Card);
     }
 
-    // Attach Toggle Video listener if button exists
-    const toggleVideoBtn = elements.modalSessionFlow.querySelector('.toggle-video-btn');
-    if (toggleVideoBtn) {
-      const wrapper = elements.modalSessionFlow.querySelector('.video-collapsible-wrapper');
-      toggleVideoBtn.addEventListener('click', () => {
-        const isExpanded = wrapper.classList.toggle('is-expanded');
-        toggleVideoBtn.textContent = isExpanded ? '✕ Close Video' : '▷ Watch Lesson';
-        toggleVideoBtn.classList.toggle('btn-primary', !isExpanded);
-        toggleVideoBtn.classList.toggle('btn-ghost', isExpanded);
+    // Attach listeners to all sub-task checkboxes inside the modal
+    const subtaskCheckboxes = elements.modalSessionFlow.querySelectorAll('.subtask-checkbox');
+    subtaskCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const key = cb.getAttribute('data-subtask-key');
+        const parentItem = cb.closest('.substep-item');
+        if (cb.checked) {
+          subtasksState[key] = true;
+          if (parentItem) parentItem.classList.add('is-completed');
+        } else {
+          delete subtasksState[key];
+          if (parentItem) parentItem.classList.remove('is-completed');
+        }
+        saveSubtasksData();
+
+        // Auto-check session complete if all sub-tasks in modal are checked
+        const allChecked = Array.from(subtaskCheckboxes).every(c => c.checked);
+        if (allChecked && subtaskCheckboxes.length > 0 && !checklistState[day.date]) {
+          toggleDayComplete(day.date, true);
+        }
       });
-    }
+    });
 
     // 4. Strategic Pro-Tip (Only if present, styled as callout)
     if (day.tip) {
@@ -849,6 +903,19 @@
       elements.modalCheckmark.checked = isChecked;
       elements.modalCompletionStatus.textContent = isChecked ? 'Completed' : 'Pending';
       elements.modalCompletionStatus.style.color = isChecked ? 'var(--orange)' : 'var(--muted-2)';
+
+      // If marking entire session complete, also check all sub-tasks in current modal
+      if (isChecked) {
+        const subtaskCheckboxes = elements.modalSessionFlow.querySelectorAll('.subtask-checkbox');
+        subtaskCheckboxes.forEach(cb => {
+          cb.checked = true;
+          const key = cb.getAttribute('data-subtask-key');
+          if (key) subtasksState[key] = true;
+          const parentItem = cb.closest('.substep-item');
+          if (parentItem) parentItem.classList.add('is-completed');
+        });
+        saveSubtasksData();
+      }
     }
 
     // Update week progress counters
@@ -994,7 +1061,7 @@
     const svg = elements.scoreChartSvg;
     const width = 880;
     const height = 260;
-    const padding = { top: 30, right: 40, bottom: 40, left: 60 };
+    const padding = { top: 32, right: 95, bottom: 44, left: 55 };
 
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
@@ -1008,9 +1075,9 @@
     };
 
     // Key milestones on timeline (X axis domain)
-    // 25 Aug 2026 (Baseline) -> 5 Dec 2026 (Test Day)
+    // 25 Aug 2026 (Baseline) -> 12 Dec 2026 (Allows Dec 5 milestone clearance)
     const startDate = new Date(2026, 7, 25).getTime();
-    const endDate = new Date(2026, 11, 8).getTime();
+    const endDate = new Date(2026, 11, 12).getTime();
 
     const getX = (dateStr) => {
       const d = new Date(dateStr).getTime();
@@ -1040,14 +1107,14 @@
     });
 
     // Milestone vertical lines (Checkpoint 9 Nov & Test Day 5 Dec)
-    const checkpointX = getX(CHECKPOINT_DATE);
-    const testdayX = getX(TESTDAY_DATE);
+    const checkpointX = Math.round(getX(CHECKPOINT_DATE));
+    const testdayX = Math.round(getX(TESTDAY_DATE));
 
     svgHtml += `
       <!-- Checkpoint line -->
       <line x1="${checkpointX}" y1="${padding.top}" x2="${checkpointX}" y2="${height - padding.bottom}" 
             stroke="var(--border)" stroke-dasharray="3,3" />
-      <text x="${checkpointX}" y="${padding.top - 10}" 
+      <text x="${checkpointX}" y="${padding.top - 12}" 
             fill="var(--muted)" font-family="var(--font-mono)" font-size="9" text-anchor="middle">
         Checkpoint (Nov 9)
       </text>
@@ -1055,13 +1122,13 @@
       <!-- Test Day line -->
       <line x1="${testdayX}" y1="${padding.top}" x2="${testdayX}" y2="${height - padding.bottom}" 
             stroke="var(--orange-border)" stroke-dasharray="3,3" />
-      <text x="${testdayX}" y="${padding.top - 10}" 
+      <text x="${testdayX}" y="${padding.top - 12}" 
             fill="var(--orange)" font-family="var(--font-mono)" font-size="9" text-anchor="middle" font-weight="600">
         Test Day (Dec 5)
       </text>
     `;
 
-    // Target 1500 Line Label on Right
+    // Target 1500 Line Label on Right (with dedicated 95px padding room)
     const targetY = getY(1500);
     svgHtml += `
       <text x="${width - padding.right + 8}" y="${targetY + 4}" 
@@ -1072,14 +1139,35 @@
 
     // Build data points
     if (scoresState.length > 0) {
-      // Points sorted by date
-      const pts = scoresState.map(s => ({
-        x: getX(s.date),
-        yTotal: getY(s.total),
-        yRw: getY(s.rw),
-        yMath: getY(s.math),
-        data: s
-      }));
+      // Group scores by date to calculate horizontal offset for multiple entries on same date
+      const dateCounts = {};
+      const dateIndices = {};
+      scoresState.forEach(s => {
+        dateCounts[s.date] = (dateCounts[s.date] || 0) + 1;
+      });
+
+      const pts = scoresState.map((s, globalIndex) => {
+        const countOnDate = dateCounts[s.date] || 1;
+        const idxOnDate = dateIndices[s.date] || 0;
+        dateIndices[s.date] = idxOnDate + 1;
+
+        // Spread points on the same date horizontally (16px spacing)
+        const offset = countOnDate > 1 ? (idxOnDate - (countOnDate - 1) / 2) * 16 : 0;
+        const baseX = getX(s.date);
+        const x = Math.round(baseX + offset);
+
+        return {
+          globalIndex,
+          x,
+          baseX,
+          countOnDate,
+          idxOnDate,
+          yTotal: getY(s.total),
+          yRw: getY(s.rw),
+          yMath: getY(s.math),
+          data: s
+        };
+      });
 
       // Generate Polyline for Total
       const totalPointsStr = pts.map(p => `${p.x},${p.yTotal}`).join(' ');
@@ -1092,15 +1180,16 @@
                   stroke-linejoin="round" />
       `;
 
-      // Interactive circles for Total
+      // Interactive circles for Total (every logged test has its own distinct circle)
       pts.forEach(p => {
+        const attemptLabel = p.countOnDate > 1 ? ` (Test #${p.idxOnDate + 1})` : '';
         svgHtml += `
-          <circle cx="${p.x}" cy="${p.yTotal}" r="5" 
+          <circle cx="${p.x}" cy="${p.yTotal}" r="5.5" 
                   fill="#1E2022" 
                   stroke="var(--orange)" 
                   stroke-width="2.5" 
                   class="chart-dot" 
-                  data-name="${p.data.name || 'Score'}" 
+                  data-name="${escapeHtml(p.data.name || 'Score')}${attemptLabel}" 
                   data-date="${p.data.date}" 
                   data-total="${p.data.total}" 
                   data-rw="${p.data.rw}" 
@@ -1109,14 +1198,18 @@
         `;
       });
 
-      // Bottom X axis labels for recorded dates
+      // Bottom X axis labels for recorded dates (unique dates only to avoid overlapping text)
+      const renderedDates = new Set();
       pts.forEach(p => {
-        svgHtml += `
-          <text x="${p.x}" y="${height - padding.bottom + 18}" 
-                fill="var(--muted)" font-family="var(--font-mono)" font-size="10" text-anchor="middle">
-            ${p.data.date.slice(5)}
-          </text>
-        `;
+        if (!renderedDates.has(p.data.date)) {
+          renderedDates.add(p.data.date);
+          svgHtml += `
+            <text x="${p.baseX}" y="${height - padding.bottom + 18}" 
+                  fill="var(--muted)" font-family="var(--font-mono)" font-size="10" text-anchor="middle">
+              ${p.data.date.slice(5)}
+            </text>
+          `;
+        }
       });
     }
 
@@ -1125,7 +1218,7 @@
     // Attach Hover Tooltip interactions
     const dots = svg.querySelectorAll('.chart-dot');
     dots.forEach(dot => {
-      dot.addEventListener('mouseenter', (e) => {
+      dot.addEventListener('mouseenter', () => {
         const name = dot.getAttribute('data-name');
         const date = dot.getAttribute('data-date');
         const total = dot.getAttribute('data-total');
@@ -1142,7 +1235,6 @@
           <div style="color:var(--muted-2); font-size:0.7rem; margin-top:0.2rem;">${gapText}</div>
         `;
 
-        const rect = svg.getBoundingClientRect();
         const cx = parseFloat(dot.getAttribute('cx'));
         const cy = parseFloat(dot.getAttribute('cy'));
 
@@ -1152,6 +1244,9 @@
 
         elements.chartTooltip.style.left = `${leftPct}%`;
         elements.chartTooltip.style.top = `${topPct}%`;
+        elements.chartTooltip.style.transform = leftPct > 75 
+          ? 'translate(-90%, -110%)' 
+          : (leftPct < 25 ? 'translate(-10%, -110%)' : 'translate(-50%, -110%)');
         elements.chartTooltip.style.display = 'block';
       });
 
