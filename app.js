@@ -1265,6 +1265,24 @@
      Application Bootstrap
      ========================================================================== */
 
+  function handleDeepLink() {
+    const hash = window.location.hash;
+    if (!hash) return;
+    if (hash === '#scores' || hash === '#toolkit' || hash === '#videos' || hash === '#tips') {
+      const tabName = hash.replace('#', '');
+      const targetBtn = document.getElementById(`tabBtn-${tabName}`);
+      if (targetBtn) targetBtn.click();
+    } else if (hash.startsWith('#day-')) {
+      const dateStr = hash.replace('#day-', '');
+      const dayIndex = flatDaysList.findIndex(d => d.date === dateStr);
+      if (dayIndex !== -1) {
+        openDayModal(dayIndex);
+      }
+    } else if (hash === '#modal') {
+      openDayModal(0);
+    }
+  }
+
   function init() {
     loadStorageData();
     buildFlatDays();
@@ -1276,6 +1294,7 @@
     updateOverallProgress();
     updateHeroCountdowns();
     setupEventListeners();
+    handleDeepLink();
   }
 
   // Run when DOM is ready
